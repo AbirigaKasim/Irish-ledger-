@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#14532d" />
+  <link rel="manifest" href="/manifest.json" />
+  <title>Kisenyi Potato Ledger</title>
+  <style>
+    :root {
+      --bg: #f1f5f2;
+      --card: #ffffff;
+      --primary: #14532d;
+      --primary-hover: #166534;
+      --accent: #d97706;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #cbd5e1;
+      --cash-bg: #ecfdf5;
+      --cash-text: #065f46;
+      --debt-bg: #fffbeb;
+      --debt-text: #92400e;
+      --bank-bg: #eff6ff;
+      --bank-text: #1e40af;
+    }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 48px; }
+    header { background: var(--primary); color: #ffffff; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { margin: 0; font-size: 1.15rem; }
+    .badge-role { background: var(--accent); color: #fff; padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+    .container { max-width: 760px; margin: 16px auto; padding: 0 14px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    h2, h3 { margin-top: 0; color: var(--primary); }
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin: 10px 0 4px; color: var(--muted); }
+    input, select, button { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.95rem; background: #fff; color: var(--text); }
+    button { background: var(--primary); color: #fff; font-weight: 700; border: none; cursor: pointer; margin-top: 12px; }
+    button:hover { background: var(--primary-hover); }
+    button.secondary { background: #475569; }
+    button.accent { background: var(--accent); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+    .wallet { padding: 12px 8px; border-radius: 10px; text-align: center; }
+    .wallet small { display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+    .wallet strong { display: block; font-size: 0.95rem; margin-top: 4px; }
+    .w-cash { background: var(--cash-bg); color: var(--cash-text); border: 1px solid #a7f3d0; }
+    .w-debt { background: var(--debt-bg); color: var(--debt-text); border: 1px solid #fde68a; }
+    .w-bank { background: var(--bank-bg); color: var(--bank-text); border: 1px solid #bfdbfe; }
+    .truck-item { border-left: 5px solid var(--primary); padding: 12px; background: #f8fafc; border-radius: 8px; margin-bottom: 10px; }
+    .truck-item.cleared { border-left-color: #94a3b8; opacity: 0.75; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; background: #e2e8f0; color: #1e293b; }
+    .row-flex { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .hidden { display: none; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { padding: 8px 6px; border-bottom: 1px solid var(--border); text-align: left; }
+    th { color: var(--primary); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Kisenyi Potato Ledger</h1>
+    <small style="opacity:0.85;">Uganda • Kenya • Tanzania</small>
+  </div>
+  <div id="userHeader" class="hidden">
+    <span id="roleBadge" class="badge-role"></span>
+  </div>
+</header>
+
+<div class="container">
+  <!-- LOGIN CARD -->
+  <div id="loginCard" class="card">
+    <h2>Account Login</h2>
+    <p style="font-size:0.88rem; color:var(--muted);">Log in as Director or Youth Seller to manage trucks, daily bag sales, and wallets.</p>
+    <label>Select Account</label>
+    <select id="loginUser">
+      <option value="DIRECTOR">Director / Owner (Full Executive Access)</option>
+      <option value="Brian">Seller: Brian</option>
+      <option value="Ivan">Seller: Ivan</option>
+      <option value="Sarah">Seller: Sarah</option>
+      <option value="Denis">Seller: Denis</option>
+    </select>
+    <label>4-Digit PIN (Default: 1234)</label>
+    <input type="password" id="loginPin" value="1234" placeholder="Enter PIN" />
+    <button onclick="login()">Log In</button>
+  </div>
+
+  <!-- MAIN DASHBOARD -->
+  <div id="appScreen" class="hidden">
+    <div class="row-flex" style="margin-bottom:12px;">
+      <strong id="welcomeText"></strong>
+      <button class="secondary" style="width:auto; margin:0; padding:6px 12px;" onclick="logout()">Switch Account</button>
+    </div>
+
+    <!-- FINANCIAL WALLETS -->
+    <div class="grid-3">
+      <div class="wallet w-cash"><small>Cash at Hand</small><strong id="valCash">UGX 0</strong></div>
+      <div class="wallet w-debt"><small>Money in Debts</small><strong id="valDebt">UGX 0</strong></div>
+      <div class="wallet w-bank"><small>Banked Money</small><strong id="valBank">UGX 0</strong></div>
+    </div>
+
+    <!-- DIRECTOR: ADD INCOMING TRUCK -->
+    <div id="directorTruckForm" class="card hidden">
+      <h3>+ Register Arriving Truck</h3>
+      <label>Vehicle Number Plate</label>
+      <input type="text" id="tPlate" placeholder="e.g. KCD 890P, UBG 412K, T 450 DXY" />
+      <label>Truck Seller / Supplier Name</label>
+      <input type="text" id="tSeller" placeholder="e.g. Kamau / Musa / Juma" />
+      <label>Irish Potato Type (Select from Dropdown)</label>
+      <select id="tType">
+        <optgroup label="Kenya">
+          <option value="Marakwet|Kenya">Marakwet (Kenya)</option>
+          <option value="Mau Short|Kenya">Mau Short (Kenya)</option>
+          <option value="Mau Long|Kenya">Mau Long (Kenya)</option>
+          <option value="Red|Kenya">Red (Kenya)</option>
+          <option value="Kibaati|Kenya">Kibaati (Kenya)</option>
+          <option value="Chwere|Kenya">Chwere (Kenya)</option>
+        </optgroup>
+        <optgroup label="Uganda">
+          <option value="Kabale|Uganda" selected>Kabale (Uganda)</option>
+          <option value="Kisoro|Uganda">Kisoro (Uganda)</option>
+          <option value="Mbale|Uganda">Mbale (Uganda)</option>
+          <option value="Kapchorwa|Uganda">Kapchorwa (Uganda)</option>
+          <option value="Budadiri|Uganda">Budadiri (Uganda)</option>
+          <option value="Ssingo|Uganda">Ssingo (Uganda)</option>
+        </optgroup>
+        <optgroup label="Tanzania">
+          <option value="TZ|Tanzania">TZ (Tanzania)</option>
+        </optgroup>
+      </select>
+      <label>Total Bags Loaded</label>
+      <input type="number" id="tBags" placeholder="e.g. 120" />
+      <button onclick="addTruck()">Save Truck Batch</button>
+    </div>
+
+    <!-- SELLER: RECORD SALE & WALLET MOVEMENTS -->
+    <div id="sellerSaleForm" class="card hidden">
+      <h3>Record Daily Bag Sale</h3>
+      <label>Select Active Truck</label>
+      <select id="sTruck"></select>
+      <label>Number of Bags Sold</label>
+      <input type="number" id="sBags" placeholder="e.g. 10" />
+      <label>Selling Price per Bag (UGX)</label>
+      <input type="number" id="sPrice" placeholder="e.g. 160000" />
+      <label>Payment Type</label>
+      <select id="sPayType">
+        <option value="CASH">Cash at Hand</option>
+        <option value="DEBT">Money in Debts (Credit Buyer)</option>
+        <option value="BANK">Banked Money (Direct Bank / Merchant MoMo)</option>
+      </select>
+      <label>Buyer Name / Phone</label>
+      <input type="text" id="sBuyer" placeholder="e.g. Mama Sarah - 0772..." />
+      <button onclick="recordSale()">Submit Bag Sale</button>
+
+      <hr style="margin:18px 0; border:none; border-top:1px solid var(--border);" />
+      <h3>Bank Cash or Recover Debt</h3>
+      <label>Transaction Action</label>
+      <select id="walletAction">
+        <option value="BANK_CASH">Deposit Cash at Hand to Bank</option>
+        <option value="RECOVER_DEBT">Collect Buyer Debt into Cash at Hand</option>
+      </select>
+      <label>Amount (UGX)</label>
+      <input type="number" id="walletAmt" placeholder="Enter UGX amount" />
+      <button class="accent" onclick="updateWallet()">Update My Wallet</button>
+    </div>
+
+    <!-- ACTIVE & CLEARED TRUCKS -->
+    <div class="card">
+      <h3>Truck Batches (Active & Cleared)</h3>
+      <div id="truckList"></div>
+    </div>
+
+    <!-- DIRECTOR: EMPLOYEE ACCOUNTABILITY TABLE -->
+    <div id="directorEmployeeCard" class="card hidden">
+      <h3>Youth Sellers Accountability</h3>
+      <table>
+        <thead><tr><th>Seller</th><th>Bags</th><th>Cash Hand</th><th>Debts</th><th>Banked</th></tr></thead>
+        <tbody id="empTable"></tbody>
+      </table>
+    </div>
+
+    <!-- SALES HISTORY -->
+    <div class="card">
+      <h3>Daily Sales Log</h3>
+      <table>
+        <thead><tr><th>Seller</th><th>Truck / Type</th><th>Bags</th><th>Total (UGX)</th><th>Wallet</th></tr></thead>
+        <tbody id="salesTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js");
+  }
+
+  let currentUser = null;
+  let trucks = JSON.parse(localStorage.getItem("k_trucks_v1")) || [
+    { id: 1, plate: "KCD 890P", seller: "Kamau", type: "Kibaati", origin: "Kenya", total: 120, remaining: 85 },
+    { id: 2, plate: "UBG 412K", seller: "Musa", type: "Kabale", origin: "Uganda", total: 100, remaining: 40 },
+    { id: 3, plate: "T 450 DXY", seller: "Juma", type: "TZ", origin: "Tanzania", total: 110, remaining: 110 }
+  ];
+  let wallets = JSON.parse(localStorage.getItem("k_wallets_v1")) || {
+    Brian: { bags: 35, cash: 2400000, debt: 800000, bank: 2400000 },
+    Ivan: { bags: 30, cash: 1500000, debt: 600000, bank: 2700000 },
+    Sarah: { bags: 30, cash: 900000, debt: 300000, bank: 3600000 },
+    Denis: { bags: 0, cash: 0, debt: 0, bank: 0 }
+  };
